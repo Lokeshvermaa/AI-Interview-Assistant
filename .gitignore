@@ -5,10 +5,17 @@ __pycache__/
 venv/
 backend/.env
 backend/chroma_db/
+backend/.hf_cache/
+*.sqlite3
 
 # Node
 node_modules/
 frontend/dist/
+frontend/.env
+frontend/.env.*
 
 # Misc
 .DS_Store
+
+# Personal study notes, not part of the published project
+NOTES.md

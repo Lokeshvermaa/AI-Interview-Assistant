@@ -1,11 +1,13 @@
 """The backend API. Each function below handles one URL the frontend calls."""
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import chroma_store, chains, interview_store, voice
+from . import chroma_store, chains, config, interview_store, voice
 from .agent import InterviewAgent
 from .parsers import extract_text
 from .sessions import Session, create_session, get_session
@@ -15,11 +17,13 @@ app = FastAPI(title="AI Interview Assistant", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=config.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+router = APIRouter()
 
 
 class QuestionsRequest(BaseModel):
@@ -72,12 +76,12 @@ def _persist_summary(session: Session) -> None:
     )
 
 
-@app.get("/health")
+@router.get("/health")
 def health() -> dict:
     return {"status": "ok"}
 
 
-@app.post("/ingest")
+@router.post("/ingest")
 async def ingest(
     resume_file: UploadFile | None = File(None),
     jd_file: UploadFile | None = File(None),
@@ -128,7 +132,7 @@ async def ingest(
     }
 
 
-@app.post("/transcribe")
+@router.post("/transcribe")
 async def transcribe_audio(audio: UploadFile = File(...)) -> dict:
     """Transcribe a recorded audio answer using Groq Whisper."""
     data = await audio.read()
@@ -138,7 +142,7 @@ async def transcribe_audio(audio: UploadFile = File(...)) -> dict:
     return {"text": text}
 
 
-@app.post("/questions")
+@router.post("/questions")
 def questions(req: QuestionsRequest) -> dict:
     session = _require_session(req.session_id)
     if not session.resume_text and not session.jd_text:
@@ -156,7 +160,7 @@ def questions(req: QuestionsRequest) -> dict:
     return {"questions": generated}
 
 
-@app.post("/interview")
+@router.post("/interview")
 def interview(req: InterviewRequest) -> dict:
     session = _require_session(req.session_id)
     if session.agent is None:
@@ -180,7 +184,7 @@ def interview(req: InterviewRequest) -> dict:
     return {"reply": reply, "done": session.agent.done, "transcript": session.transcript}
 
 
-@app.post("/evaluate")
+@router.post("/evaluate")
 def evaluate(req: EvaluateRequest) -> dict:
     session = _require_session(req.session_id)
     result = chains.grade_answer(req.question, req.answer)
@@ -193,14 +197,14 @@ def evaluate(req: EvaluateRequest) -> dict:
     return entry
 
 
-@app.get("/interviews")
+@router.get("/interviews")
 def interviews() -> dict:
     """List past interviews (newest first) for comparison."""
     sessions = interview_store.list_sessions()
     return {"interviews": sessions, "count": len(sessions)}
 
 
-@app.get("/report/{session_id}")
+@router.get("/report/{session_id}")
 def report(session_id: str) -> dict:
     stored = interview_store.get_session(session_id)
     questions = stored["questions"]
@@ -231,3 +235,40 @@ def report(session_id: str) -> dict:
         "evaluations": evaluations,
         "transcript": transcript,
     }
+
+
+# The same routes are registered twice on purpose:
+#   - without a prefix  -> /health, used by the Vite dev proxy (it strips /api)
+#   - with the /api prefix -> /api/health, used by the built frontend in production
+app.include_router(router)
+app.include_router(router, prefix="/api", include_in_schema=False)
+
+
+class SPAStaticFiles(StaticFiles):
+    """Serves the React build and falls back to index.html for unknown paths."""
+
+    async def get_response(self, path: str, scope):
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            if exc.status_code == 404 and not scope["path"].startswith("/api"):
+                return await super().get_response("index.html", scope)
+            raise
+
+
+if config.FRONTEND_DIST.is_dir():
+    # Mounted last so the API routes and /docs still win.
+    app.mount(
+        "/",
+        SPAStaticFiles(directory=str(config.FRONTEND_DIST), html=True),
+        name="frontend",
+    )
+else:
+
+    @app.get("/")
+    def root() -> dict:
+        return {
+            "service": "AI Interview Assistant",
+            "docs": "/docs",
+            "note": "Frontend build not found. Run npm run build in frontend/.",
+        }

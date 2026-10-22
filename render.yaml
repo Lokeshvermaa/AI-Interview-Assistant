@@ -1,0 +1,38 @@
+# Render blueprint for the AI Interview Assistant.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# It builds the React frontend and serves it from FastAPI, so the whole app
+# lives behind one URL and there is nothing to configure for CORS.
+
+services:
+  - type: web
+    name: ai-interview-assistant
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: >-
+      npm --prefix ../frontend ci &&
+      npm --prefix ../frontend run build &&
+      pip install -r requirements.txt &&
+      python scripts/preload_model.py
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5
+      - key: PYTHON_VERSION_FILE
+        value: ../.python-version
+      - key: GROQ_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: HF_HOME
+        value: /opt/render/project/src/backend/.hf_cache
+      # Keeps memory usage down on a small (512MB) free instance.
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: MKL_NUM_THREADS
+        value: "1"
+      - key: TOKENIZERS_PARALLELISM
+        value: "false"
