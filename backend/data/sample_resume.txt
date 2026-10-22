@@ -1,0 +1,29 @@
+LOKESH VERMA
+Backend / ML Engineer
+lokesh@example.com | github.com/example | Bengaluru, India
+
+SUMMARY
+Python developer with 2 years of experience building APIs and machine learning
+prototypes. Passionate about NLP and generative AI.
+
+SKILLS
+Python, FastAPI, Flask, SQL, Docker, Git, scikit-learn, PyTorch (basic),
+Hugging Face Transformers, LangChain, ChromaDB.
+
+EXPERIENCE
+Software Engineer, Example Tech (2023 - present)
+- Built REST APIs with FastAPI serving 50k requests/day.
+- Developed a document question-answering prototype using RAG, sentence-transformers
+  and ChromaDB.
+- Automated data processing pipelines with Python and Pandas.
+
+Machine Learning Intern, Example Labs (2022)
+- Trained text classification models with scikit-learn and PyTorch.
+- Explored Hugging Face models for sentiment analysis.
+
+PROJECTS
+Resume Matcher - TF-IDF and embeddings to score résumé vs job description.
+Interview Assistant - RAG app that generates interview questions and grades answers.
+
+EDUCATION
+B.Tech in Computer Science, Example University (2023)

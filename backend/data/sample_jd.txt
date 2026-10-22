@@ -1,0 +1,21 @@
+Senior Software Engineer — Backend (fictional job description)
+
+We are hiring a Backend Engineer to build scalable data and AI services.
+
+Responsibilities:
+- Design and build REST APIs using Python (FastAPI or Flask).
+- Build retrieval-augmented generation (RAG) pipelines with vector databases.
+- Work with large language models via APIs (OpenAI, Groq, Hugging Face).
+- Write clean, tested, production-quality code and review peers' work.
+
+Requirements:
+- 3+ years of Python experience.
+- Strong understanding of REST, SQL, and async programming.
+- Experience with Docker and cloud deployment (AWS or GCP).
+- Familiarity with machine learning concepts and NLP is a plus.
+- Excellent communication and collaboration skills.
+
+Nice to have:
+- Experience with LangChain or LlamaIndex.
+- Exposure to PyTorch or TensorFlow.
+- Prior work on search or recommendation systems.
