@@ -6,22 +6,31 @@ the same tag, which is how we rebuild a report or list past interviews later.
 """
 
 import json
+import threading
 from datetime import datetime, timezone
-from functools import lru_cache
 
 from langchain_chroma import Chroma
 
 from . import config
+from .chroma_client import get_client
 from .embeddings import get_embeddings
 
+_lock = threading.Lock()
+_collection: Chroma | None = None
 
-@lru_cache(maxsize=1)
+
 def get_collection() -> Chroma:
-    return Chroma(
-        collection_name=config.INTERVIEW_COLLECTION,
-        embedding_function=get_embeddings(),
-        persist_directory=config.CHROMA_DIR,
-    )
+    # Shared by every request, so build it once.
+    global _collection
+    if _collection is None:
+        with _lock:
+            if _collection is None:
+                _collection = Chroma(
+                    client=get_client(),
+                    collection_name=config.INTERVIEW_COLLECTION,
+                    embedding_function=get_embeddings(),
+                )
+    return _collection
 
 
 def _now() -> str:

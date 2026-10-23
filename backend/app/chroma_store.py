@@ -4,23 +4,32 @@ Text is split into chunks, each chunk is turned into a vector by the embedding
 model, and Chroma keeps them so we can search by meaning.
 """
 
-from functools import lru_cache
+import threading
 
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from . import config
+from .chroma_client import get_client
 from .embeddings import get_embeddings
 
+_lock = threading.Lock()
+_store: Chroma | None = None
 
-@lru_cache(maxsize=1)
+
 def get_store() -> Chroma:
-    return Chroma(
-        collection_name=config.COLLECTION_NAME,
-        embedding_function=get_embeddings(),
-        persist_directory=config.CHROMA_DIR,
-    )
+    # Both requests and the report code call this, so build it only once.
+    global _store
+    if _store is None:
+        with _lock:
+            if _store is None:
+                _store = Chroma(
+                    client=get_client(),
+                    collection_name=config.COLLECTION_NAME,
+                    embedding_function=get_embeddings(),
+                )
+    return _store
 
 
 def split_text(text: str, source: str) -> list[Document]:
@@ -48,7 +57,8 @@ def retrieve(query: str, k: int = 4, source: str | None = None) -> list[Document
 
 
 def reset() -> None:
-    try:
-        get_store().delete_collection()
-    finally:
-        get_store.cache_clear()
+    global _store
+    with _lock:
+        if _store is not None:
+            _store.delete_collection()
+        _store = None

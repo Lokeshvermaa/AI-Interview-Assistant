@@ -1,6 +1,7 @@
 """The backend API. Each function below handles one URL the frontend calls."""
 
 from fastapi import APIRouter, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -95,9 +96,13 @@ async def ingest(
 
     try:
         if resume_file is not None and resume_file.filename:
-            resume = extract_text(resume_file.filename, await resume_file.read())
+            data = await resume_file.read()
+            resume = await run_in_threadpool(
+                extract_text, resume_file.filename, data
+            )
         if jd_file is not None and jd_file.filename:
-            jd = extract_text(jd_file.filename, await jd_file.read())
+            data = await jd_file.read()
+            jd = await run_in_threadpool(extract_text, jd_file.filename, data)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -107,12 +112,18 @@ async def ingest(
             detail="Provide at least one résumé or job description (file or text).",
         )
 
-    docs = []
-    if resume:
-        docs += chroma_store.split_text(resume, source="resume")
-    if jd:
-        docs += chroma_store.split_text(jd, source="jd")
-    chunks = chroma_store.add_documents(docs)
+    # Embedding loads torch and the model, which takes a while on a small host.
+    # Run it off the event loop so /health keeps answering and the instance is
+    # not restarted mid-request.
+    def _index() -> int:
+        docs = []
+        if resume:
+            docs += chroma_store.split_text(resume, source="resume")
+        if jd:
+            docs += chroma_store.split_text(jd, source="jd")
+        return chroma_store.add_documents(docs)
+
+    chunks = await run_in_threadpool(_index)
 
     session = get_session(session_id) if session_id else None
     if session is None:
@@ -138,7 +149,9 @@ async def transcribe_audio(audio: UploadFile = File(...)) -> dict:
     data = await audio.read()
     if not data:
         raise HTTPException(status_code=400, detail="Empty audio file.")
-    text = transcribe(data, filename=audio.filename or "audio.webm")
+    text = await run_in_threadpool(
+        transcribe, data, audio.filename or "audio.webm"
+    )
     return {"text": text}
 
 
