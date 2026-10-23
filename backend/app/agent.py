@@ -3,7 +3,7 @@ model can see what was already said and move on to the next question."""
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from .llm import get_llm
+from .llm import error_message, get_llm
 
 SYSTEM = (
     "You are a friendly but professional interviewer conducting a mock interview. "
@@ -46,7 +46,12 @@ class InterviewAgent:
         return reply
 
     def _invoke(self) -> str:
-        return self._llm.invoke(self.messages).content
+        try:
+            return self._llm.invoke(self.messages).content
+        except RuntimeError:
+            raise
+        except Exception as exc:
+            raise RuntimeError(error_message(exc)) from exc
 
 
 def _numbered(questions: list[str]) -> str:

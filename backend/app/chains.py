@@ -11,7 +11,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from .chroma_store import retrieve
-from .llm import get_llm
+from .llm import error_message, get_llm
 
 QUESTION_PROMPT = ChatPromptTemplate.from_messages(
     [
@@ -59,7 +59,7 @@ GRADE_PROMPT = ChatPromptTemplate.from_messages(
 _chat_parser = StrOutputParser()
 
 
-def _parse_json(raw: str):
+def _parse_json(raw: str, what: str = "response"):
     # The model usually returns clean JSON, but sometimes wraps it in ```json.
     # Strip those and try again before giving up.
     text = (raw or "").strip()
@@ -69,8 +69,25 @@ def _parse_json(raw: str):
     except json.JSONDecodeError:
         match = re.search(r"[\[{].*[\]}]", text, flags=re.DOTALL)
         if match:
-            return json.loads(match.group(0))
+            try:
+                return json.loads(match.group(0))
+            except json.JSONDecodeError:
+                pass
+        raise RuntimeError(
+            f"The AI returned {what} that was not valid JSON. Please try again."
+        ) from None
+
+
+def _invoke(prompt, payload: dict, temperature: float) -> str:
+    # Provider errors become RuntimeError, which the API turns into a 503 with
+    # a readable message instead of an opaque 500.
+    try:
+        chain = prompt | get_llm(temperature=temperature) | _chat_parser
+        return chain.invoke(payload)
+    except RuntimeError:
         raise
+    except Exception as exc:
+        raise RuntimeError(error_message(exc)) from exc
 
 
 def _context(query: str, source: str | None, k: int) -> str:
@@ -85,21 +102,43 @@ def generate_questions(
     jd_context = _context(jd_text or "job description", source="jd", k=4)
     resume_context = _context(resume_text or "candidate résumé", source="resume", k=4)
 
-    chain = QUESTION_PROMPT | get_llm(temperature=0.5) | _chat_parser
-    raw = chain.invoke(
-        {"jd_context": jd_context, "resume_context": resume_context, "n": n}
+    raw = _invoke(
+        QUESTION_PROMPT,
+        {"jd_context": jd_context, "resume_context": resume_context, "n": n},
+        temperature=0.5,
     )
-    data = _parse_json(raw)
+    data = _parse_json(raw, "questions")
     if isinstance(data, dict):
         data = data.get("questions", [])
-    return data[:n]
+    if not isinstance(data, list):
+        raise RuntimeError("The AI returned questions in an unexpected format.")
+
+    questions = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        question = str(item.get("question", "")).strip()
+        if not question:
+            continue
+        item["question"] = question
+        item.setdefault("type", "technical")
+        item.setdefault("difficulty", "medium")
+        questions.append(item)
+    if not questions:
+        raise RuntimeError("The AI did not return any questions. Please try again.")
+    return questions[:n]
 
 
 def grade_answer(question: str, answer: str) -> dict:
     context = _context(question, source=None, k=4)
-    chain = GRADE_PROMPT | get_llm(temperature=0.2) | _chat_parser
-    raw = chain.invoke({"question": question, "context": context, "answer": answer})
-    data = _parse_json(raw)
+    raw = _invoke(
+        GRADE_PROMPT,
+        {"question": question, "context": context, "answer": answer},
+        temperature=0.2,
+    )
+    data = _parse_json(raw, "an evaluation")
+    if not isinstance(data, dict):
+        raise RuntimeError("The AI returned an evaluation in an unexpected format.")
     data.setdefault("score", 0)
     data.setdefault("strengths", [])
     data.setdefault("improvements", [])

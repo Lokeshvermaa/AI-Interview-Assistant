@@ -7,6 +7,7 @@ from functools import lru_cache
 from groq import Groq
 
 from . import config
+from .llm import error_message
 
 
 @lru_cache(maxsize=1)
@@ -25,9 +26,14 @@ def transcribe(data: bytes, filename: str = "audio.webm", language: str = "en") 
         tmp.write(data)
         tmp.flush()
         with open(tmp.name, "rb") as handle:
-            result = _client().audio.transcriptions.create(
-                file=(filename, handle.read()),
-                model=config.ASR_MODEL,
-                language=language or None,
-            )
+            try:
+                result = _client().audio.transcriptions.create(
+                    file=(filename, handle.read()),
+                    model=config.ASR_MODEL,
+                    language=language or None,
+                )
+            except RuntimeError:
+                raise
+            except Exception as exc:
+                raise RuntimeError(error_message(exc)) from exc
     return (getattr(result, "text", "") or "").strip()
