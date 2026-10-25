@@ -18,7 +18,7 @@ Résumé + Job Description (PDF/DOCX/TXT or text)
         ▼
  Groq via LangChain
    ├─ generate role-specific questions
-   ├─ run conversational mock interview
+   ├─ run a mock interview
    └─ grade answers with feedback and metrics
         │
  Voice answer → Groq Whisper transcription → speaking metrics (WPM, filler words)
@@ -99,4 +99,4 @@ The app uses ChromaDB (`backend/chroma_db/`, gitignored):
 - `interview_context`: résumé/JD chunks for RAG
 - `interviews`: questions, answers/evaluations (with scores, feedback, voice metrics/fillers), transcript turns, and session summaries
 
-Data is stored via `interview_store.py`. A local JSON backup is also written under `backend/data/` when available. On ephemeral hosts (e.g., Render free tier), all of this can be lost on restart/redeploy.
+Data is stored via `interview_store.py`. A local JSON backup may also be written under `backend/data/`. On Render free-tier ephemeral storage, all saved data can be lost after restarts or redeployments.
