@@ -650,7 +650,7 @@ export default function Home() {
               INTERVIEW BETTER.
             </p>
             <p className="mt-3 max-w-sm self-end text-right text-[11px] leading-relaxed tracking-[0.18em] text-[var(--text-2)]">
-              AI-powered interview practice with personalized questions, voice or text sessions, and instant feedback for students and job seekers.
+              Practice interviews tailored to your resume and job description. Speak or type, get honest feedback.
             </p>
           </div>
         </div>
