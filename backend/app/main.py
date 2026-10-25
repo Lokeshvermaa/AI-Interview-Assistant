@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import chroma_store, chains, config, interview_store, voice
+from . import chroma_store, chains, config, interview_store, json_store, voice
 from .agent import InterviewAgent
 from .parsers import extract_text
 from .sessions import Session, create_session, get_session
@@ -75,6 +75,20 @@ def _persist_summary(session: Session) -> None:
         questions_asked=len(session.questions),
         answers_evaluated=len(session.evaluations),
     )
+    try:
+        json_store.save_full_session(
+            session.id,
+            {
+                "session_id": session.id,
+                "title": session.title,
+                "questions": session.questions,
+                "evaluations": session.evaluations,
+                "transcript": session.transcript,
+                "meta": {"title": session.title},
+            },
+        )
+    except Exception:
+        pass
 
 
 @router.get("/health")
@@ -194,6 +208,10 @@ def interview(req: InterviewRequest) -> dict:
     interview_store.save_turn(
         session.id, len(session.transcript) - 1, "interviewer", reply
     )
+    try:
+        _persist_summary(session)
+    except Exception:
+        pass
     return {"reply": reply, "done": session.agent.done, "transcript": session.transcript}
 
 
@@ -206,7 +224,10 @@ def evaluate(req: EvaluateRequest) -> dict:
     index = len(session.evaluations)
     session.evaluations.append(entry)
     interview_store.save_answer(session.id, index, req.question, req.answer, entry)
-    _persist_summary(session)
+    try:
+        _persist_summary(session)
+    except Exception:
+        pass
     return entry
 
 
@@ -219,34 +240,50 @@ def interviews() -> dict:
 
 @router.get("/report/{session_id}")
 def report(session_id: str) -> dict:
+    # Try JSON first (most reliable)
+    json_data = None
+    try:
+        json_data = json_store.get_full_session(session_id)
+    except Exception:
+        json_data = None
+
     stored = interview_store.get_session(session_id)
-    questions = stored["questions"]
-    evaluations = stored["answers"]
-    transcript = stored["transcript"]
-    meta = stored["meta"]
+    questions = stored.get("questions") or []
+    evaluations = stored.get("answers") or []
+    transcript = stored.get("transcript") or []
+    meta = stored.get("meta") or {}
+
+    if json_data:
+        questions = json_data.get("questions") or questions
+        evaluations = json_data.get("evaluations") or evaluations
+        transcript = json_data.get("transcript") or transcript
+        if json_data.get("meta"):
+            meta = {**meta, **json_data.get("meta")}
 
     if not questions and not evaluations:
         session = get_session(session_id)
-        if session is None:
+        if session is None and not json_data:
             raise HTTPException(
                 status_code=404, detail="No report found for this session."
             )
-        questions = session.questions
-        evaluations = session.evaluations
-        transcript = session.transcript
-        meta = {"title": session.title, "created_at": "", "average_score": 0.0}
+        if session:
+            questions = session.questions
+            evaluations = session.evaluations
+            transcript = session.transcript
+            meta = {"title": session.title, "created_at": "", "average_score": 0.0}
 
     scores = [e.get("score", 0) for e in evaluations]
     average = round(sum(scores) / len(scores), 2) if scores else 0.0
     return {
         "session_id": session_id,
-        "title": meta.get("title", ""),
-        "created_at": meta.get("created_at", ""),
+        "title": meta.get("title", json_data.get("title") if json_data else ""),
+        "created_at": meta.get("created_at", json_data.get("updated_at") if json_data else ""),
         "questions_asked": len(questions),
         "answers_evaluated": len(evaluations),
         "average_score": average,
         "evaluations": evaluations,
         "transcript": transcript,
+        "questions": questions,
     }
 
 

@@ -1,0 +1,157 @@
+{
+  "04745ec722fe4ab98b34365584b50488": {
+    "session_id": "04745ec722fe4ab98b34365584b50488",
+    "title": "Senior Software Engineer — Backend (fictional job description)",
+    "questions": [
+      {
+        "question": "Can you describe how you implemented async endpoints in FastAPI for high‑traffic APIs?",
+        "type": "technical",
+        "difficulty": "medium"
+      },
+      {
+        "question": "What was the biggest technical challenge in your RAG prototype using ChromaDB?",
+        "type": "resume-specific",
+        "difficulty": "medium"
+      },
+      {
+        "question": "How would you design a scalable REST API for LLM inference on AWS using Docker?",
+        "type": "role-fit",
+        "difficulty": "hard"
+      }
+    ],
+    "evaluations": [
+      {
+        "question": "Can you describe how you implemented async endpoints in FastAPI for high‑traffic APIs?",
+        "answer": "I built a FastAPI service with a RAG pipeline. I chunked the documents, embedded them with a sentence-transformers model and stored the vectors in ChromaDB, then retrieved the top chunks to ground the LLM prompt.",
+        "voice": {
+          "word_count": 36,
+          "duration_sec": 18.0,
+          "wpm": 120.0,
+          "filler_count": 0,
+          "fillers": {}
+        },
+        "score": 2,
+        "verdict": "Irrelevant",
+        "strengths": [
+          "Mentions FastAPI",
+          "Shows familiarity with RAG pipelines"
+        ],
+        "improvements": [
+          "Does not address async endpoints",
+          "No discussion of concurrency or high‑traffic handling",
+          "Lacks details on async I/O, database calls, or performance optimizations"
+        ],
+        "model_answer": "Implemented async endpoints by defining route handlers with `async def`, using async‑compatible libraries (e.g., `httpx` for external calls, `asyncpg` or `SQLModel` with async support for Postgres), and leveraging FastAPI's background tasks for non‑blocking work. Configured Uvicorn/Gunicorn with multiple workers and tuned `max_concurrency`/`keep-alive` settings. Employed connection pooling, rate limiting, and proper exception handling to ensure the API scales under high traffic while keeping the event loop responsive."
+      }
+    ],
+    "transcript": [
+      {
+        "role": "interviewer",
+        "content": "Hello! Can you describe how you implemented async endpoints in FastAPI for high‑traffic APIs?"
+      },
+      {
+        "role": "candidate",
+        "content": "I built a FastAPI service with a RAG pipeline. I chunked the documents, embedded them with a sentence-transformers model and stored the vectors in ChromaDB, then retrieved the top chunks to ground the LLM prompt."
+      },
+      {
+        "role": "interviewer",
+        "content": "Nice overview; could you elaborate on the async handling details?  \n\nWhat was the biggest technical challenge in your RAG prototype using ChromaDB?"
+      }
+    ],
+    "meta": {
+      "title": "Senior Software Engineer — Backend (fictional job description)"
+    },
+    "updated_at": "2026-10-25T07:24:12.172355+00:00"
+  },
+  "466d4b4ce6bc45e8bac4bb906745d4db": {
+    "session_id": "466d4b4ce6bc45e8bac4bb906745d4db",
+    "title": "JOB",
+    "questions": [
+      {
+        "question": "Explain how you would create a simple REST endpoint using FastAPI.",
+        "type": "technical",
+        "difficulty": "medium"
+      },
+      {
+        "question": "What challenges did you face while improving traffic signal efficiency with multi-agent reinforcement learning?",
+        "type": "resume-specific",
+        "difficulty": "hard"
+      },
+      {
+        "question": "How do you stay motivated when working on repetitive coding tasks during a probation period?",
+        "type": "behavioral",
+        "difficulty": "easy"
+      }
+    ],
+    "evaluations": [],
+    "transcript": [],
+    "meta": {
+      "title": "JOB"
+    },
+    "updated_at": "2026-10-25T08:57:10.568325+00:00"
+  },
+  "d04165833d684e4fafaec1b85bcf51ae": {
+    "session_id": "d04165833d684e4fafaec1b85bcf51ae",
+    "title": "Senior Software Engineer — Backend (fictional job description)",
+    "questions": [
+      {
+        "question": "Can you describe the RAG pipeline you built with ChromaDB and sentence‑transformers?",
+        "type": "resume-specific",
+        "difficulty": "medium"
+      },
+      {
+        "question": "How do you implement async endpoints in FastAPI for high‑throughput APIs?",
+        "type": "technical",
+        "difficulty": "medium"
+      },
+      {
+        "question": "Describe a time you reviewed a teammate’s code and improved its quality.",
+        "type": "behavioral",
+        "difficulty": "easy"
+      }
+    ],
+    "evaluations": [
+      {
+        "question": "Can you describe the RAG pipeline you built with ChromaDB and sentence‑transformers?",
+        "answer": "I built a FastAPI service with a RAG pipeline. I chunked the documents, embedded them with a sentence-transformers model and stored the vectors in ChromaDB, then retrieved the top chunks to ground the LLM prompt.",
+        "voice": {
+          "word_count": 36,
+          "duration_sec": 18.0,
+          "wpm": 120.0,
+          "filler_count": 0,
+          "fillers": {}
+        },
+        "score": 7,
+        "verdict": "Good but brief",
+        "strengths": [
+          "Mentions all core components (FastAPI, chunking, sentence‑transformers, ChromaDB, retrieval)",
+          "Shows understanding of the overall RAG flow"
+        ],
+        "improvements": [
+          "Provide more detail on chunk size, embedding model, and indexing method",
+          "Explain how the retrieved chunks are formatted into the LLM prompt",
+          "Mention any libraries (e.g., LangChain) or LLM integration specifics"
+        ],
+        "model_answer": "In the FastAPI app I first split each document into overlapping chunks (e.g., 500‑token windows). Each chunk is encoded with a sentence‑transformers model (e.g., all‑MiniLM‑L6‑v2) to obtain a dense vector. The vectors are up‑serted into a ChromaDB collection, which builds an ANN index. At query time the user question is encoded with the same model, the index returns the top‑k most similar chunks, and those chunks are concatenated into a prompt that is sent to the LLM (e.g., Groq or OpenAI). The response is returned via the FastAPI endpoint. Optional steps include storing metadata, caching, and using LangChain prompt templates."
+      }
+    ],
+    "transcript": [
+      {
+        "role": "interviewer",
+        "content": "Hello! Can you describe the RAG pipeline you built with ChromaDB and sentence‑transformers?"
+      },
+      {
+        "role": "candidate",
+        "content": "I built a FastAPI service with a RAG pipeline. I chunked the documents, embedded them with a sentence-transformers model and stored the vectors in ChromaDB, then retrieved the top chunks to ground the LLM prompt."
+      },
+      {
+        "role": "interviewer",
+        "content": "Good overview—clear steps and integration. How do you implement async endpoints in FastAPI for high‑throughput APIs?"
+      }
+    ],
+    "meta": {
+      "title": "Senior Software Engineer — Backend (fictional job description)"
+    },
+    "updated_at": "2026-10-25T08:59:46.572514+00:00"
+  }
+}

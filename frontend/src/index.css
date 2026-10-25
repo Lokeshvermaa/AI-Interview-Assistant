@@ -1,3 +1,74 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --text: #151515;
+  --text-2: #4b4b4b;
+  --line: #e7e7e7;
+  --red: #ff3333;
+  --red-2: #e60000;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-line: var(--line);
+  --color-red: var(--red);
+  --color-red-2: var(--red-2);
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Satoshi', 'Inter', sans-serif;
+  --font-serif: 'Cormorant', 'Times New Roman', serif;
+}
+
+@layer base {
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  html {
+    font-feature-settings: 'ss01','cv05','cv11';
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+  }
+  ::selection {
+    background: rgba(255, 51, 51, 0.12);
+  }
+  a {
+    color: inherit;
+  }
+}
+
+@layer utilities {
+  .mix-blend-difference {
+    mix-blend-mode: difference;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .mask-fade {
+    mask-image: linear-gradient(180deg, black 70%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, black 70%, transparent 100%);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes reveal {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
